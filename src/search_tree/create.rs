@@ -33,45 +33,61 @@ impl <T> Iterator for LayoutSubtreesAndGetMinValues<'_, T> where T: Iterator<Ite
     }
 }
 
+fn layout_tree_of_height_1<'a>(
+    reserved_space: &mut [i32],
+    mut generator:  Box<dyn Iterator<Item=i32> + 'a>,
+) -> Result<i32, ()> {
+    if let Some(element) = generator.next() {
+        reserved_space[0] = element;
+        Ok(reserved_space[0])
+    } else {
+        Err(())
+    }
+}
+
+fn layout_tree_of_height_2<'a>(
+    reserved_space: &mut [i32],
+    mut generator:  Box<dyn Iterator<Item=i32> + 'a>,
+) -> Result<i32, ()> {
+    for leaf_offset in 1..=2 {
+        if let Some(element) = generator.next() {
+            reserved_space[leaf_offset] = element;
+        } else {
+            return Err(())
+        }
+    }
+    reserved_space[0] = reserved_space[1];
+    Ok(reserved_space[0])
+}
+
+
+fn layout_tree_of_height_3<'a>(
+    reserved_space: &mut [i32],
+    mut generator:  Box<dyn Iterator<Item=i32> + 'a>,
+) -> Result<i32, ()> {
+    for leaf_offset in 3..=6 {
+        if let Some(element) = generator.next() {
+            reserved_space[leaf_offset] = element;
+        } else {
+            return Err(())
+        }
+    }
+    reserved_space[0] = reserved_space[3];
+    reserved_space[1] = reserved_space[3];
+    reserved_space[2] = reserved_space[5];
+
+    Ok(reserved_space[3])
+}
+
 pub fn layout<'a>(
     reserved_space: &mut [i32],
     mut generator:  Box<dyn Iterator<Item=i32> + 'a>,
     height: u16
 ) -> Result<i32, ()> {
     match height {
-        1 => {
-            if let Some(element) = generator.next() {
-                reserved_space[0] = element;
-                Ok(reserved_space[0])
-            } else {
-                Err(())
-            }
-        }
-        2 => {
-            for leaf_offset in 1..=2 {
-               if let Some(element) = generator.next() {
-                    reserved_space[leaf_offset] = element;
-                } else {
-                    return Err(())
-                }
-            }
-            reserved_space[0] = reserved_space[1];
-            Ok(reserved_space[0])
-        }
-        3 => {
-            for leaf_offset in 3..=6 {
-                if let Some(element) = generator.next() {
-                    reserved_space[leaf_offset] = element;
-                } else {
-                    return Err(())
-                }
-            }
-            reserved_space[0] = reserved_space[3];
-            reserved_space[1] = reserved_space[3];
-            reserved_space[2] = reserved_space[5];
-
-            Ok(reserved_space[3])
-        }
+        1 => { layout_tree_of_height_1(reserved_space, generator) }
+        2 => { layout_tree_of_height_2(reserved_space, generator) }
+        3 => { layout_tree_of_height_3(reserved_space, generator) }
         _ => {
             let height_of_bottom_subtree = height / 2;
             let height_of_top_subtree = height_of_bottom_subtree + if is_odd(height) {1} else {0};
