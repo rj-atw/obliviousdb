@@ -3,15 +3,15 @@ use crate::search_tree::util::{is_odd, size_of_tree_with_height};
 //https://fasterthanli.me/articles/recursive-iterators-rust
 
 struct LayoutSubtreesAndGetMinValues<'a, T>
-    where T : Iterator<Item=i32> {
-    reserved_space: &'a mut [i32],
+    where T : Iterator<Item=i64> {
+    reserved_space: &'a mut [i64],
     generator: T,
     height_of_subtree: u16,
     subtree_number: usize,
 }
 
-impl <T> Iterator for LayoutSubtreesAndGetMinValues<'_, T> where T: Iterator<Item=i32> {
-    type Item=i32;
+impl <T> Iterator for LayoutSubtreesAndGetMinValues<'_, T> where T: Iterator<Item=i64> {
+    type Item=i64;
 
     fn next(&mut self) -> Option<Self::Item> {
         let size_of_subtree = size_of_tree_with_height(self.height_of_subtree) as usize;
@@ -34,9 +34,9 @@ impl <T> Iterator for LayoutSubtreesAndGetMinValues<'_, T> where T: Iterator<Ite
 }
 
 fn layout_tree_of_height_1<'a>(
-    reserved_space: &mut [i32],
-    mut generator:  Box<dyn Iterator<Item=i32> + 'a>,
-) -> Result<i32, ()> {
+    reserved_space: &mut [i64],
+    mut generator:  Box<dyn Iterator<Item=i64> + 'a>,
+) -> Result<i64, ()> {
     if let Some(element) = generator.next() {
         reserved_space[0] = element;
         Ok(reserved_space[0])
@@ -46,9 +46,9 @@ fn layout_tree_of_height_1<'a>(
 }
 
 fn layout_tree_of_height_2<'a>(
-    reserved_space: &mut [i32],
-    mut generator:  Box<dyn Iterator<Item=i32> + 'a>,
-) -> Result<i32, ()> {
+    reserved_space: &mut [i64],
+    mut generator:  Box<dyn Iterator<Item=i64> + 'a>,
+) -> Result<i64, ()> {
     for leaf_offset in 1..=2 {
         if let Some(element) = generator.next() {
             reserved_space[leaf_offset] = element;
@@ -62,9 +62,9 @@ fn layout_tree_of_height_2<'a>(
 
 
 fn layout_tree_of_height_3<'a>(
-    reserved_space: &mut [i32],
-    mut generator:  Box<dyn Iterator<Item=i32> + 'a>,
-) -> Result<i32, ()> {
+    reserved_space: &mut [i64],
+    mut generator:  Box<dyn Iterator<Item=i64> + 'a>,
+) -> Result<i64, ()> {
     for leaf_offset in 3..=6 {
         if let Some(element) = generator.next() {
             reserved_space[leaf_offset] = element;
@@ -80,10 +80,10 @@ fn layout_tree_of_height_3<'a>(
 }
 
 pub fn layout<'a>(
-    reserved_space: &mut [i32],
-    mut generator:  Box<dyn Iterator<Item=i32> + 'a>,
+    reserved_space: &mut [i64],
+    generator:  Box<dyn Iterator<Item=i64> + 'a>,
     height: u16
-) -> Result<i32, ()> {
+) -> Result<i64, ()> {
     match height {
         1 => { layout_tree_of_height_1(reserved_space, generator) }
         2 => { layout_tree_of_height_2(reserved_space, generator) }
@@ -94,7 +94,8 @@ pub fn layout<'a>(
 
             let size_of_top_subtree = size_of_tree_with_height(height_of_top_subtree);
 
-            let (top_subtree, bottom_subtree) = reserved_space.split_at_mut(size_of_top_subtree as usize);
+            let (top_subtree, bottom_subtree) =
+                reserved_space.split_at_mut(size_of_top_subtree as usize);
 
             let min_values = LayoutSubtreesAndGetMinValues {
                 reserved_space: bottom_subtree,
@@ -102,7 +103,6 @@ pub fn layout<'a>(
                 height_of_subtree: height_of_bottom_subtree,
                 subtree_number: 0
             };
-
 
             layout(top_subtree, Box::new(min_values), height_of_top_subtree)
         }
@@ -144,7 +144,7 @@ mod tests {
     #[test]
     fn recursive_case_layout_tree_of_height_7() {
         let mut reserved_space = [0; 127];
-        let leaves : Vec<i32> = (0..64).collect();
+        let leaves : Vec<i64> = (0..64).collect();
 
         let expected = [
              0,  0, 32,
