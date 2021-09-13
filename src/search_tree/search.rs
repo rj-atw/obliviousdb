@@ -1,14 +1,36 @@
 use crate::search_tree::util::{is_odd, size_of_tree_with_height, number_of_leaves_in_tree};
 
+use core_simd::*;
+
 #[derive(Eq, PartialEq, Debug)]
+
 pub enum SearchTreeIndex {
     NotInTree,
-    Leaf { index: u64, leaf_number: u64 }
+    Leaf { index: u32, leaf_number: u32 }
 }
 
+fn search_3_level_tree_for_lower_bound_simd(of: u32, array: &[u32]) -> SearchTreeIndex {
+    const NULL: Simd<u32, 4> = u32x4::splat(6);
+    const LEAF: Simd<u32, 4> = u32x4::from_array([0, 3, 4, 5]);
 
-fn search_3_level_tree_for_lower_bound(of: i64, array: &[i64]) -> SearchTreeIndex {
-    if of < array[3] {
+    let of_simd = u32x4::splat(of);
+    let base_simd = u32x4::from_array([array[3], array[4], array[5], array[6]]);
+
+    let s = of_simd.lanes_lt(base_simd);
+
+    let selected = s.select(LEAF, NULL);
+    let idx = selected.horizontal_min();
+
+    //ToDo: Add new Leaf state to avoid check
+    return if idx == 0 {
+        SearchTreeIndex::NotInTree
+    } else {
+        SearchTreeIndex::Leaf { index: idx, leaf_number: idx - 3 }
+    }
+}
+
+fn search_3_level_tree_for_lower_bound(of: u32, array: &[u32]) -> SearchTreeIndex {
+    return if of < array[3] {
         SearchTreeIndex::NotInTree
     } else if of < array[4] {
         SearchTreeIndex::Leaf { index: 3, leaf_number: 0 }
@@ -21,7 +43,7 @@ fn search_3_level_tree_for_lower_bound(of: i64, array: &[i64]) -> SearchTreeInde
     }
 }
 
-fn search_2_level_tree_for_lower_bound(of: i64, array: &[i64]) -> SearchTreeIndex {
+fn search_2_level_tree_for_lower_bound(of: u32, array: &[u32]) -> SearchTreeIndex {
     if of < array[1] {
         SearchTreeIndex::NotInTree
     } else if of < array[2] {
@@ -31,7 +53,7 @@ fn search_2_level_tree_for_lower_bound(of: i64, array: &[i64]) -> SearchTreeInde
     }
 }
 
-fn search_single_node_tree_for_lower_bound(of: i64, array: &[i64]) -> SearchTreeIndex {
+fn search_single_node_tree_for_lower_bound(of: u32, array: &[u32]) -> SearchTreeIndex {
     if of >= array[0] {
         SearchTreeIndex::Leaf {index: 0, leaf_number: 0}
     } else {
@@ -39,9 +61,9 @@ fn search_single_node_tree_for_lower_bound(of: i64, array: &[i64]) -> SearchTree
     }
 }
 
-pub fn search_for_lower_bound(element: i64, height: u16, array: &[i64]) -> SearchTreeIndex {
+pub fn search_for_lower_bound(element: u32, height: u16, array: &[u32]) -> SearchTreeIndex {
     return match height {
-        3 => { search_3_level_tree_for_lower_bound(element, array) }
+        3 => { search_3_level_tree_for_lower_bound_simd(element, array) }
         2 => { search_2_level_tree_for_lower_bound(element, array) }
         1 => { search_single_node_tree_for_lower_bound(element, array) }
         _ => {
@@ -61,7 +83,7 @@ pub fn search_for_lower_bound(element: i64, height: u16, array: &[i64]) -> Searc
                 };
 
             let subtree_root_index =
-                | subtree_number: u64 | top_subtree_size + bottom_subtree_size * subtree_number;
+                | subtree_number: u32 | top_subtree_size + bottom_subtree_size * subtree_number;
 
             let right_subtree_root = array[subtree_root_index(2*leaf_number+1) as usize];
 
@@ -88,14 +110,14 @@ pub fn search_for_lower_bound(element: i64, height: u16, array: &[i64]) -> Searc
 
 #[cfg(test)]
 mod tests {
-    use crate::search_tree::search::{search_3_level_tree_for_lower_bound, SearchTreeIndex, search_2_level_tree_for_lower_bound, search_single_node_tree_for_lower_bound, search_for_lower_bound};
+    use crate::search_tree::search::{search_3_level_tree_for_lower_bound, SearchTreeIndex, search_2_level_tree_for_lower_bound, search_single_node_tree_for_lower_bound, search_for_lower_bound, search_3_level_tree_for_lower_bound_simd};
 
     #[test]
     fn search_in_base_case_height3() {
-        let tree_of_height_3 = [0,0,1,  0,1,5,  6];
+        let tree_of_height_3 = [1,1,4,  1,2,4,  6];
 
-        let test_case = | of: i64, expected_index: u64, expected_leaf: u64, on_fail: &str |
-            assert_eq!(search_3_level_tree_for_lower_bound(of, &tree_of_height_3),
+        let test_case = | of: u32, expected_index: u32, expected_leaf: u32, on_fail: &str |
+            assert_eq!(search_3_level_tree_for_lower_bound_simd(of, &tree_of_height_3),
                        SearchTreeIndex::Leaf { index: expected_index, leaf_number: expected_leaf },
                        "{}", on_fail);
 
@@ -105,7 +127,7 @@ mod tests {
         test_case(6,6,3,
                    "Search for largest element of Tree with height 3");
 
-        test_case(0,3,0,
+        test_case(1,3,0,
                    "Search for smallest element of Tree with height 3");
 
         test_case(2,4,1,
@@ -114,7 +136,7 @@ mod tests {
         test_case(2000,6,3,
                    "Search for element not in tree which is greater than range");
 
-        assert_eq!(search_3_level_tree_for_lower_bound(-5, &tree_of_height_3),
+        assert_eq!(search_3_level_tree_for_lower_bound(0, &tree_of_height_3),
                    SearchTreeIndex::NotInTree,
                    "Search for element not in tree which is less than range");
     }
@@ -123,16 +145,16 @@ mod tests {
     fn search_in_base_case_height2() {
         let tree_of_height_2 = [10,10,16];
 
-        let test_case = | of: i64, expected_index: u64, expected_leaf: u64, on_fail: &str |
+        let test_case = | of: u32, expected_index: u32, expected_leaf: u32, on_fail: &str |
             assert_eq!(search_2_level_tree_for_lower_bound(of, &tree_of_height_2),
                        SearchTreeIndex::Leaf { index: expected_index, leaf_number: expected_leaf },
                        "{}", on_fail);
 
         test_case(16,2,1,
-                   "Search for largest element of Tree with height 3");
+                   "Search for largest element of Tree with height 2");
 
         test_case(10,1,0,
-                   "Search for smallest element of Tree with height 3");
+                   "Search for smallest element of Tree with height 2");
 
         test_case(14,1,0,
                    "Search for element not in tree within range");
@@ -140,7 +162,7 @@ mod tests {
         test_case(200,2,1,
                    "Search for element not in tree greater than range");
 
-        assert_eq!(search_2_level_tree_for_lower_bound(-5, &tree_of_height_2),
+        assert_eq!(search_2_level_tree_for_lower_bound(3, &tree_of_height_2),
                    SearchTreeIndex::NotInTree,
                    "Search for element not in tree less than range");
     }
@@ -149,7 +171,7 @@ mod tests {
     fn search_in_base_case_height1() {
         let tree_of_height_1 = [23];
 
-        let test_case = | of: i64, expected_index: u64, expected_leaf: u64, on_fail: &str |
+        let test_case = | of: u32, expected_index: u32, expected_leaf: u32, on_fail: &str |
             assert_eq!(search_single_node_tree_for_lower_bound(of, &tree_of_height_1),
                        SearchTreeIndex::Leaf { index: expected_index, leaf_number: expected_leaf },
                        "{}", on_fail);
@@ -166,7 +188,7 @@ mod tests {
     fn test_search_for_elements_in_tree() {
         let tree = [0,0,4,  0,0,1,  2,2,3,  4,4,5,  6,6,7];
 
-        let test_case = | of: i64, expected_index: u64, expected_leaf: u64, on_fail: &str |
+        let test_case = | of: u32, expected_index: u32, expected_leaf: u32, on_fail: &str |
             assert_eq!(search_for_lower_bound(of, 4, &tree),
                        SearchTreeIndex::Leaf { index: expected_index, leaf_number: expected_leaf },
                        "{}", on_fail);
@@ -178,14 +200,14 @@ mod tests {
 
     #[test]
     fn test_search_for_elements_not_in_tree() {
-        let tree = [0,0,4,  0,0,1,  2,2,3,  4,4,55,  66,66,77];
+        let tree = [1,1,5,  1,1,2,  3,3,4,  5,5,57,  77,77,78];
 
-        let test_case = | of: i64, expected_index: u64, expected_leaf: u64, on_fail: &str |
+        let test_case = | of: u32, expected_index: u32, expected_leaf: u32, on_fail: &str |
             assert_eq!(search_for_lower_bound(of, 4, &tree),
                        SearchTreeIndex::Leaf { index: expected_index, leaf_number: expected_leaf },
                        "{}", on_fail);
 
-        assert_eq!(search_for_lower_bound(-5, 4, &tree),
+        assert_eq!(search_for_lower_bound(0, 4, &tree),
             SearchTreeIndex::NotInTree,
             "element lower than tree range"
         );
