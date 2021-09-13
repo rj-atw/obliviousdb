@@ -7,6 +7,8 @@ mod util;
 use search::SearchTreeIndex;
 use search::search_for_lower_bound;
 use crate::search_tree::create::layout;
+use crate::search_tree::search::SearchTreeIndex::{NotInTree};
+use crate::search_tree::search::Leaf;
 
 pub struct SearchTree {
     array: Box<[u32]>,
@@ -15,7 +17,13 @@ pub struct SearchTree {
 
 impl SearchTree {
     pub fn search(&self, element: u32) -> SearchTreeIndex {
-        search_for_lower_bound(element, self.height, &self.array)
+        let Leaf { index, leaf_number } = search_for_lower_bound(element, self.height, &self.array);
+
+        return if index == 0 && leaf_number > 0 {
+            NotInTree
+        } else {
+            SearchTreeIndex::Leaf { index, leaf_number}
+        }
     }
 
     pub fn new<'a>(generator: impl Iterator<Item=u32>, count: usize) -> Result<SearchTree, ()>{
