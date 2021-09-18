@@ -11,12 +11,12 @@ use crate::search_tree::search::SearchTreeIndex::{NotInTree};
 use crate::search_tree::search::Leaf;
 
 pub struct SearchTree {
-    array: Box<[u32]>,
+    array: Box<[i32]>,
     height: u16
 }
 
 impl SearchTree {
-    pub fn search(&self, element: u32) -> SearchTreeIndex {
+    pub fn search(&self, element: i32) -> SearchTreeIndex {
         let Leaf { index, leaf_number } = search_for_lower_bound(element, self.height, &self.array);
 
         return if index == 0 && leaf_number > 0 {
@@ -26,7 +26,7 @@ impl SearchTree {
         }
     }
 
-    pub fn new<'a>(generator: impl Iterator<Item=u32>, count: usize) -> Result<SearchTree, ()>{
+    pub fn new<'a>(generator: impl Iterator<Item=i32>, count: usize) -> Result<SearchTree, ()>{
         assert_eq!(count.count_ones(), 1,
                    "Search Tree must be a full binary tree. Number of leaves: {}", count);
 
@@ -49,7 +49,7 @@ mod tests {
 
     #[test]
     fn create_and_search() {
-        let leaves : Vec<u32> = (0..32).chain((40..=360).step_by(10)).collect();
+        let leaves : Vec<i32> = (0..32).chain((40..=360).step_by(10)).collect();
         let search_tree = SearchTree::new(leaves.into_iter(), 64).unwrap();
 
         assert_eq!(search_tree.search(39),
