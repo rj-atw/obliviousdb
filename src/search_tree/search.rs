@@ -1,8 +1,6 @@
 use crate::search_tree::util::{is_odd, size_of_tree_with_height, number_of_leaves_in_tree};
 
 use core_simd::*;
-use crate::search_tree::search::SearchTreeIndex::NotInTree;
-
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct Leaf { pub index: i32, pub leaf_number: i32 }
@@ -25,81 +23,66 @@ fn search_3_level_tree_for_lower_bound_simd(of: i32, array: &[i32]) -> Leaf {
     let selected = s.select(LEAF, NULL);
     let idx = selected.horizontal_min();
 
-    //ToDo: Add new Leaf state to avoid check
     Leaf { index: idx , leaf_number: idx - 3 }
 }
 
-fn search_3_level_tree_for_lower_bound(of: i32, array: &[i32]) -> Leaf {
-    return if of < array[3] {
-        Leaf { index: 0 , leaf_number: 1}
-    } else if of < array[4] {
-        Leaf { index: 3, leaf_number: 0 }
-    } else if of < array[5] {
-        Leaf { index: 4, leaf_number: 1 }
-    } else if of < array[6] {
-        Leaf { index: 5, leaf_number: 2 }
-    } else {
-       Leaf { index: 6, leaf_number: 3 }
-    }
-}
-
 fn search_2_level_tree_for_lower_bound_simd(of: i32, array: &[i32]) -> Leaf {
-    if of < array[1] {
-        Leaf { index: 0, leaf_number: 1 }
-    } else if of < array[2] {
+   let lower_bound_is_2nd_leaf = (of >= array[2]) as i32;
+
+   Leaf { index: 1 + lower_bound_is_2nd_leaf, leaf_number: 0 + lower_bound_is_2nd_leaf }
+   /*
+    if  {
+       Leaf { index: 2, leaf_number: 1 }
+    } else {
         Leaf { index: 1, leaf_number: 0 }
-    } else {
-        Leaf { index: 2, leaf_number: 1 }
     }
+    */
 }
 
-
-fn search_2_level_tree_for_lower_bound(of: i32, array: &[i32]) -> SearchTreeIndex {
-    if of < array[1] {
-        SearchTreeIndex::NotInTree
-    } else if of < array[2] {
-        SearchTreeIndex::Leaf { index: 1, leaf_number: 0 }
-    } else {
-        SearchTreeIndex::Leaf { index: 2, leaf_number: 1 }
-    }
+fn search_single_node_tree_for_lower_bound(_of: i32, _array: &[i32]) -> Leaf {
+    Leaf {index: 0, leaf_number: 0}
 }
 
-fn search_single_node_tree_for_lower_bound(of: i32, array: &[i32]) -> Leaf {
-    if of >= array[0] {
-        Leaf {index: 0, leaf_number: 0}
-    } else {
-        Leaf { index: 0, leaf_number: 1}
-    }
+pub fn search_for_lower_bound_in_top_subtree(element: i32, height: u16, array: &[i32]) -> i32 {
+    let top_subtree_is_taller = is_odd(height);
+    let subtree_height = height >> 1;
+    let top_subtree_height = subtree_height + top_subtree_is_taller as u16;
+    let top_subtree_size = size_of_tree_with_height(top_subtree_height);
+    let bottom_subtree_size = size_of_tree_with_height(subtree_height);
+
+
+     let  Leaf { index: _, leaf_number } = search_for_lower_bound(element, top_subtree_height, &array);
+
+     let right_subtree_root_index = (top_subtree_size + bottom_subtree_size*(2*leaf_number+1)) as usize;
+     let right_subtree_root = array[right_subtree_root_index];
+
+     let is_right_subtree = element >= right_subtree_root;
+     let subtree_number = 2*leaf_number + is_right_subtree as i32;
+
+     subtree_number
 }
 
+pub fn subtree_root_index_generator(height: u16) -> impl Fn(i32) -> i32 {
+            let top_subtree_is_taller = is_odd(height);
+            let subtree_height = height >> 1;
+            let bottom_subtree_size = size_of_tree_with_height(subtree_height);
+            let top_subtree_height = subtree_height + if top_subtree_is_taller {1} else {0};
+            let top_subtree_size = size_of_tree_with_height(top_subtree_height);
+
+            move | subtree_number: i32 | top_subtree_size + bottom_subtree_size * subtree_number
+}
+
+//Lower bound must exist
 pub fn search_for_lower_bound(element: i32, height: u16, array: &[i32]) -> Leaf {
     return match height {
         3 => { search_3_level_tree_for_lower_bound_simd(element, array) }
         2 => { search_2_level_tree_for_lower_bound_simd(element, array) }
         1 => { search_single_node_tree_for_lower_bound(element, array) }
         _ => {
-            let top_subtree_is_taller = is_odd(height);
-            let subtree_height = height >> 1;
+           let subtree_height = height >> 1;
+           let subtree_root_index = subtree_root_index_generator(height);
 
-            let top_subtree_height = subtree_height + if top_subtree_is_taller {1} else {0};
-            let top_subtree_size = size_of_tree_with_height(top_subtree_height);
-            let bottom_subtree_size = size_of_tree_with_height(subtree_height);
-
-            let leaf_number =
-                if let Leaf { index: _, leaf_number } =
-                search_for_lower_bound(element, top_subtree_height, &array[0..top_subtree_size as usize]) {
-                    leaf_number
-                } else {
-                    return Leaf { index: 0 , leaf_number: 1}
-                };
-
-            let subtree_root_index =
-                | subtree_number: i32 | top_subtree_size + bottom_subtree_size * subtree_number;
-
-            let right_subtree_root = array[subtree_root_index(2*leaf_number+1) as usize];
-
-            let subtree_number =
-                if element >= right_subtree_root { 2*leaf_number + 1 } else { 2*leaf_number };
+           let subtree_number = search_for_lower_bound_in_top_subtree(element, height, array);
 
             let bottom_subtree_index = {
                 let start_index = subtree_root_index(subtree_number) as usize;
@@ -116,19 +99,6 @@ pub fn search_for_lower_bound(element: i32, height: u16, array: &[i32]) -> Leaf 
                     leaf_number: number_of_leaves_in_tree(subtree_height) * subtree_number + leaf_number_in_subtree
                 }
             }
-           /*
-            match bottom_subtree_index {
-                SearchTreeIndex::Leaf { index: index_in_subtree, leaf_number: leaf_number_in_subtree } =>
-                    return if index_in_subtree == 0 {
-                        NotInTree
-                    } else {
-                        SearchTreeIndex::Leaf {
-                            index: subtree_root_index(subtree_number) + index_in_subtree,
-                            leaf_number: number_of_leaves_in_tree(subtree_height) * subtree_number + leaf_number_in_subtree
-                        }
-                    }
-            }
-            */
         }
     }
 }
