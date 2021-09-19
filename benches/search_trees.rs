@@ -1,6 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand::random;
 
+mod perf;
+
 use obliviousdb::search_tree::SearchTree;
 
 fn benchmark_search_oblivious_static_search_tree(c: &mut Criterion) {
@@ -37,6 +39,16 @@ fn benchmark_search_std_collection_btreemap(c: &mut Criterion) {
     }));
 }
 
-criterion_group!(benches, benchmark_search_oblivious_static_search_tree, benchmark_search_std_collection_btreemap);
-criterion_main!(benches);
 
+/*
+criterion_group!{
+    name = benches;
+    // This can be any expression that returns a `Criterion` object.
+    config = Criterion::default().with_profiler(perf::FlamegraphProfiler::new(100));
+    targets = benchmark_search_oblivious_static_search_tree, benchmark_search_std_collection_btreemap
+}
+*/
+criterion_group!(benches,benchmark_search_std_collection_btreemap,benchmark_search_oblivious_static_search_tree);
+
+
+criterion_main!(benches);

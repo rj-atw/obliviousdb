@@ -17,12 +17,11 @@ pub struct SearchTree {
 
 impl SearchTree {
     pub fn search(&self, element: i32) -> SearchTreeIndex {
-        let Leaf { index, leaf_number } = search_for_lower_bound(element, self.height, &self.array);
-
-        return if index == 0 && leaf_number > 0 {
-            NotInTree
-        } else {
+        return if element >= self.array[0] {
+            let Leaf { index, leaf_number } = search_for_lower_bound(element, self.height, &self.array);
             SearchTreeIndex::Leaf { index, leaf_number}
+        } else {
+            NotInTree
         }
     }
 
