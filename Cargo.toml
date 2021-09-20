@@ -17,6 +17,11 @@ name = "search_trees"
 harness = false
 debug = true
 
+[[bench]]
+name = "assumptions"
+harness = false
+debug = true
+
 [profile.bench]
 debug = true
 

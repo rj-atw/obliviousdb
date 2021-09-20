@@ -43,25 +43,25 @@ pub fn search_for_lower_bound_in_top_subtree(element: i32, height: u16, array: &
     let top_subtree_size = size_of_tree_with_height(top_subtree_height);
     let bottom_subtree_size = size_of_tree_with_height(subtree_height);
 
-     let  Leaf { index: _, leaf_number } = search_for_lower_bound(element, top_subtree_height, &array);
+    let  Leaf { index: _, leaf_number } = search_for_lower_bound(element, top_subtree_height, &array);
 
-     let right_subtree_root_index = (top_subtree_size + bottom_subtree_size*(2*leaf_number+1)) as usize;
-     let right_subtree_root = array[right_subtree_root_index];
+    let right_subtree_root_index = (top_subtree_size + bottom_subtree_size*(2*leaf_number+1)) as usize;
+    let right_subtree_root = array[right_subtree_root_index];
 
-     let is_right_subtree = element >= right_subtree_root;
-     let subtree_number = 2*leaf_number + is_right_subtree as i32;
+    let is_right_subtree = element >= right_subtree_root;
+    let subtree_number = 2*leaf_number + is_right_subtree as i32;
 
-     subtree_number
+    subtree_number
 }
 
 pub fn subtree_root_index_generator(height: u16) -> impl Fn(i32) -> i32 {
-            let top_subtree_is_taller = is_odd(height);
-            let subtree_height = height >> 1;
-            let bottom_subtree_size = size_of_tree_with_height(subtree_height);
-            let top_subtree_height = subtree_height + if top_subtree_is_taller {1} else {0};
-            let top_subtree_size = size_of_tree_with_height(top_subtree_height);
+    let top_subtree_is_taller = is_odd(height);
+    let subtree_height = height >> 1;
+    let bottom_subtree_size = size_of_tree_with_height(subtree_height);
+    let top_subtree_height = subtree_height + if top_subtree_is_taller {1} else {0};
+    let top_subtree_size = size_of_tree_with_height(top_subtree_height);
 
-            move | subtree_number: i32 | top_subtree_size + bottom_subtree_size * subtree_number
+    move | subtree_number: i32 | top_subtree_size + bottom_subtree_size * subtree_number
 }
 
 //Lower bound must exist
@@ -81,7 +81,6 @@ pub fn search_for_lower_bound(element: i32, height: u16, array: &[i32]) -> Leaf 
                 let end_index = subtree_root_index(subtree_number+1) as usize;
                 search_for_lower_bound(element, subtree_height, &array[start_index..end_index])
             };
-
 
             let Leaf { index: index_in_subtree, leaf_number: leaf_number_in_subtree } = bottom_subtree_index;
             Leaf {
