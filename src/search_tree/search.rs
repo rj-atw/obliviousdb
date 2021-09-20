@@ -30,13 +30,6 @@ fn search_2_level_tree_for_lower_bound_simd(of: i32, array: &[i32]) -> Leaf {
    let lower_bound_is_2nd_leaf = (of >= array[2]) as i32;
 
    Leaf { index: 1 + lower_bound_is_2nd_leaf, leaf_number: 0 + lower_bound_is_2nd_leaf }
-   /*
-    if  {
-       Leaf { index: 2, leaf_number: 1 }
-    } else {
-        Leaf { index: 1, leaf_number: 0 }
-    }
-    */
 }
 
 fn search_single_node_tree_for_lower_bound(_of: i32, _array: &[i32]) -> Leaf {

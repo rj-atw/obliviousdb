@@ -8,7 +8,7 @@ use obliviousdb::search_tree::SearchTree;
 fn benchmark_search_oblivious_static_search_tree(c: &mut Criterion) {
     let max: i32 = 268_435_456;
         //536_870_912;
-    /*1_073_741_824_0;*/
+    //1_073_741_824;
     let min = 0;
     let gen = (min..max).step_by(1).into_iter();
 
@@ -24,8 +24,8 @@ fn benchmark_search_oblivious_static_search_tree(c: &mut Criterion) {
 fn benchmark_search_std_collection_btreemap(c: &mut Criterion) {
     use std::collections::BTreeMap;
     let max: i32 =  268_435_456;
-    /*536_870_912_0;*/
-    /*1_073_741_824;*/
+    //536_870_912;
+    //1_073_741_824;
     let min = 0;
     let gen = (min..max).step_by(1).into_iter();
 
@@ -38,17 +38,21 @@ fn benchmark_search_std_collection_btreemap(c: &mut Criterion) {
         tree.contains_key(&element)
     }));
 }
-
-
 /*
+
+
+*/
+
+
+
+
 criterion_group!{
     name = benches;
     // This can be any expression that returns a `Criterion` object.
     config = Criterion::default().with_profiler(perf::FlamegraphProfiler::new(100));
     targets = benchmark_search_oblivious_static_search_tree, benchmark_search_std_collection_btreemap
 }
-*/
-criterion_group!(benches,benchmark_search_std_collection_btreemap,benchmark_search_oblivious_static_search_tree);
 
+//criterion_group!(benches,benchmark_search_std_collection_btreemap,benchmark_search_oblivious_static_search_tree);
 
 criterion_main!(benches);
